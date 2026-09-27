@@ -1,184 +1,321 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/Views/Pengaturan_page.dart';
-import 'package:flutter_application_1/Views/statistik_page.dart';
-
-final List<Map<String, dynamic>> dataKeuangan = [
-  {'tanggal': '20 Sep 2026', 'kategori': 'Gaji', 'jenis': 'masuk', 'nominal': 8000000},
-  {'tanggal': '20 Sep 2026', 'kategori': 'Makanan', 'jenis': 'keluar', 'nominal': 45000},
-  {'tanggal': '19 Sep 2026', 'kategori': 'Transport', 'jenis': 'keluar', 'nominal': 25000},
-  {'tanggal': '18 Sep 2026', 'kategori': 'Belanja', 'jenis': 'keluar', 'nominal': 250000},
-  {'tanggal': '17 Sep 2026', 'kategori': 'Freelance', 'jenis': 'masuk', 'nominal': 1200000},
-  {'tanggal': '16 Sep 2026', 'kategori': 'Tagihan', 'jenis': 'keluar', 'nominal': 400000},
-];
-
-// Mengubah 8000000 menjadi "Rp 8.000.000" (cukup dipakai, tidak perlu dipahami dulu)
-String rupiah(int angka) {
-  final teks = angka.toString().replaceAllMapped(
-        RegExp(r'\B(?=(\d{3})+(?!\d))'),
-        (m) => '.',
-      );
-  return 'Rp $teks';
-}
+import 'package:flutter_application_1/models/basic_model.dart';
+import 'package:flutter_application_1/models/list_mobil_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => _CarHomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  int menuAktif = 0;
+class _CarHomePageState extends State<HomePage> {
+  bool _isNavOpen = false;
+  static const double _navWidth = 240;
 
-  final List<String> namaMenu = ['Riwayat', 'Statistik', 'Pengaturan', 'About Me'];
-  final List<IconData> ikonMenu = [Icons.list_alt, Icons.bar_chart, Icons.settings, Icons.person];
+  final PageController _bannerController = PageController();
+  Timer? _bannerTimer;
+  int _currentBanner = 0;
+
+  final List<String> bannerImages = [
+    'https://imgcdn.oto.com/large/gallery/exterior/38/1798/toyota-vios-front-angle-low-view-360231.jpg?tr=w-1200,h-600',
+    'https://asset.honda-indonesia.com/media-library/f0018fcd-3f9e-496c-a8cc-1a3e241af1c0/bannermodel02b__1680104724056.jpg',
+  ];
+
+  final List<String> _menuItems = const [
+    'Home',
+    'Mobil Baru',
+    'Promosi',
+    'Test Drive',
+    'Simulasi Kredit',
+    'Tentang Kami',
+    'Hubungi Kami',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoSlide();
+  }
+
+  void _startAutoSlide() {
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!mounted || bannerImages.isEmpty) return;
+      _currentBanner = (_currentBanner + 1) % bannerImages.length;
+      _bannerController.animateToPage(
+        _currentBanner,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    _bannerController.dispose();
+    super.dispose();
+  }
+
+  void _toggleNav() => setState(() => _isNavOpen = !_isNavOpen);
 
   @override
   Widget build(BuildContext context) {
-    // LayoutBuilder memberi tahu lebar layar saat ini
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final layarLebar = constraints.maxWidth >= 800;
-
-        if (layarLebar) {
-          return Scaffold(
-            backgroundColor: const Color(0xFFF4F5F7),
-            body: Row(
-              children: [
-                Container(
-                  width: 220,
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'My Duit',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeInOut,
+              width: _isNavOpen ? _navWidth : 0,
+              color: const Color(0xFF1A1A2E),
+              child: _isNavOpen
+                  ? ClipRect(
+                      child: OverflowBox(
+                        maxWidth: _navWidth,
+                        minWidth: _navWidth,
+                        alignment: Alignment.centerLeft,
+                        child: _buildSideNav(),
                       ),
-                      const SizedBox(height: 24),
-                      daftarMenu(dalamDrawer: false),
-                    ],
-                  ),
-                ),
-                Expanded(child: isiHalaman()),
-              ],
+                    )
+                  : null,
             ),
-          );
-        } else {
-          
-          return Scaffold(
-            backgroundColor: const Color(0xFFF4F5F7),
-            appBar: AppBar(title: Text(namaMenu[menuAktif])),
-            drawer: Drawer(
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'My Duit',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 24),
-                      daftarMenu(dalamDrawer: true),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            body: isiHalaman(),
-          );
-        }
-      },
-    );
-  }
 
-  // ---------------------------------------------------------------
-  // DAFTAR MENU
-  // Dipakai di sidebar dan di drawer, jadi kodenya cukup ditulis sekali.
-  // ---------------------------------------------------------------
-  Widget daftarMenu({required bool dalamDrawer}) {
-    return Column(
-      children: [
-        // Buat satu ListTile untuk setiap nama menu
-        for (int i = 0; i < namaMenu.length; i++)
-          ListTile(
-            leading: Icon(ikonMenu[i]),
-            title: Text(namaMenu[i]),
-            selected: menuAktif == i, // menu yang aktif diberi warna
-            onTap: () {
-              setState(() {
-                menuAktif = i; // ganti menu, tampilan otomatis dibangun ulang
-              });
-              if (dalamDrawer) {
-                Navigator.pop(context); // tutup drawer setelah memilih
-              }
-            },
-          ),
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------
-  // ISI HALAMAN
-  // Menentukan apa yang tampil sesuai menu yang dipilih.
-  // ---------------------------------------------------------------
-  Widget isiHalaman() {
-    if (menuAktif == 0) {
-      return halamanRiwayat();
-    } else if (menuAktif == 1) {
-      return const Center(child: Text('Halaman Statistik (belum dibuat)'));
-    } else if (menuAktif == 2) {
-      return const Center(child: Text('Halaman Pengaturan (belum dibuat)'));
-    } else {
-      return const Center(child: Text('Halaman About Me (belum dibuat)'));
-    }
-  }
-
-  // ---------------------------------------------------------------
-  // HALAMAN RIWAYAT (berisi LIST VIEW)
-  // ---------------------------------------------------------------
-  Widget halamanRiwayat() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Riwayat',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          // Expanded wajib dipakai supaya ListView mendapat sisa tinggi layar
-          Expanded(
-            child: ListView.builder(
-              itemCount: dataKeuangan.length, // jumlah baris
-              itemBuilder: (context, index) {
-                // dipanggil sekali untuk setiap baris; index = nomor baris (0, 1, 2, ...)
-                final item = dataKeuangan[index];
-                final masuk = item['jenis'] == 'masuk';
-
-                return Card(
-                  child: ListTile(
-                    title: Text(item['kategori']),
-                    subtitle: Text(item['tanggal']),
-                    trailing: Text(
-                      '${masuk ? '+' : '-'} ${rupiah(item['nominal'])}',
-                      style: TextStyle(
-                        color: masuk ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.bold,
+            Expanded(
+              child: Column(
+                children: [
+                  _buildTopBar(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildBanner(),
+                          _buildCarSection(),
+                        ],
                       ),
                     ),
                   ),
-                );
-              },
+                ],
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, anim) => RotationTransition(turns: anim, child: child),
+              child: Icon(
+                _isNavOpen ? Icons.close : Icons.menu,
+                key: ValueKey(_isNavOpen),
+                size: 28,
+              ),
+            ),
+            onPressed: _toggleNav,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'DEALER MOBIL',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildSideNav() {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Text(
+            'MENU',
+            style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 2),
+          ),
+        ),
+        ..._menuItems.map(
+          (item) => ListTile(
+            title: Text(item, style: const TextStyle(color: Colors.white)),
+            onTap: () {
+              _toggleNav();
+              // TODO: navigasi ke halaman sesuai item
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: AspectRatio(
+          aspectRatio: 2,
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: _bannerController,
+                itemCount: bannerImages.length,
+                onPageChanged: (i) => setState(() => _currentBanner = i),
+                itemBuilder: (context, index) {
+                  return Image.network(
+                    bannerImages[index],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) => const Center(
+                      child: Icon(Icons.broken_image, size: 60, color: Colors.white54),
+                    ),
+                  );
+                },
+              ),
+              Positioned(
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    bannerImages.length,
+                    (i) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentBanner == i ? 22 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: _currentBanner == i ? Colors.red : Colors.white70,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCarSection() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Pilihan Mobil', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final crossAxisCount = width > 900 ? 3 : (width > 550 ? 2 : 1);
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: daftarMobil.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.78,
+                ),
+                itemBuilder: (context, index) => _buildCarCard(daftarMobil[index]),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCarCard(Mobil mobil) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Image.network(
+              mobil.gambar,
+              fit: BoxFit.contain,
+              width: double.infinity,
+              errorBuilder: (context, error, stackTrace) =>
+                  const Center(child: Icon(Icons.directions_car, size: 48, color: Colors.grey)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(mobil.model, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(mobil.tipe, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+          const SizedBox(height: 6),
+          Text('harga mulai', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+          Text(
+            _formatRupiah(mobil.harga),
+            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                  onPressed: () {
+                    // TODO: navigasi ke halaman detail mobil
+                  },
+                  child: const Text('Detail'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  onPressed: () {
+                    // TODO: proses beli / hubungi dealer
+                  },
+                  child: const Text('Beli'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatRupiah(int value) {
+    final str = value.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      final posFromEnd = str.length - i;
+      buffer.write(str[i]);
+      if (posFromEnd > 1 && posFromEnd % 3 == 1) buffer.write('.');
+    }
+    return 'Rp$buffer';
   }
 }
