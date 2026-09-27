@@ -3,16 +3,13 @@ import 'package:flutter/material.dart';
 class AboutMePage extends StatelessWidget {
   const AboutMePage({super.key});
 
-  // Ganti dengan data diri kamu sendiri
   static const String _nama = 'Irfan Feby M';
   static const String _email = 'Fanmg@ggmail.coc';
   static const String _telepon = '+62 812-3456-7890';
   static const String _alamat = 'Madiun aja';
-  static const String _bio =
-      'Kurang inpo aku kang';
+  static const String _bio = 'Kurang inpo aku kang';
 
-  static const String _fotoUrl =
-      'https://asset.kompas.com/crops/oaap4XBdhjuRj-4FhoirhPGgPLI=/58x0:1557x999/1200x800/data/photo/2019/10/08/5d9c5fb7dc641.jpg';
+  static const String _fotoAsset = 'assets/images/ino bingung';
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +39,8 @@ class AboutMePage extends StatelessWidget {
                 ],
               ),
               child: ClipOval(
-                child: Image.network(
-                  _fotoUrl,
+                child: Image.asset(
+                  _fotoAsset,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => const Icon(
                     Icons.person,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/basic_model.dart';
 import 'package:flutter_application_1/models/list_mobil_model.dart';
+import 'package:flutter_application_1/Views/about_me_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -29,6 +30,7 @@ class _CarHomePageState extends State<HomePage> {
     'Promosi',
     'Test Drive',
     'Simulasi Kredit',
+    'About Me',
     'Tentang Kami',
     'Hubungi Kami',
   ];
@@ -157,7 +159,13 @@ class _CarHomePageState extends State<HomePage> {
             title: Text(item, style: const TextStyle(color: Colors.white)),
             onTap: () {
               _toggleNav();
-              // TODO: navigasi ke halaman sesuai item
+              if (item == 'About Me') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AboutMePage()),
+                );
+              }
+              // TODO: navigasi ke halaman lain sesuai item
             },
           ),
         ),
