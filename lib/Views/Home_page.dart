@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/basic_model.dart';
 import 'package:flutter_application_1/models/list_mobil_model.dart';
 import 'package:flutter_application_1/Views/about_me_page.dart';
+import 'package:flutter_application_1/Controller/auth_controller.dart';
+import 'package:flutter_application_1/Views/login_page.dart';
+import 'package:get/get.dart';
+import 'package:flutter_application_1/Views/car_detail.dart';
+import 'package:flutter_application_1/Controller/auth_controller.dart';
+import 'package:flutter_application_1/Views/registrasi_data_diri_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -294,7 +300,12 @@ class _CarHomePageState extends State<HomePage> {
                     side: const BorderSide(color: Colors.red),
                   ),
                   onPressed: () {
-                    // TODO: navigasi ke halaman detail mobil
+                    final auth = Get.find<AuthController>();
+                    if(auth.isRegistered){
+                      Get.to(() => CarDetailPage(mobil: mobil));
+                    }else{
+                      Get.to(() => const LoginView());
+                    }
                   },
                   child: const Text('Detail'),
                 ),
@@ -304,7 +315,12 @@ class _CarHomePageState extends State<HomePage> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                   onPressed: () {
+                    final auth = Get.find<AuthController>();
+                    if(auth.isComplete){
                     // TODO: proses beli / hubungi dealer
+                    }else{
+                      Get.to(() => const RegistrasiDataDiriPage());
+                    }
                   },
                   child: const Text('Beli'),
                 ),

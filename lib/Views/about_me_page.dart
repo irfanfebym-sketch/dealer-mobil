@@ -9,7 +9,7 @@ class AboutMePage extends StatelessWidget {
   static const String _alamat = 'Madiun aja';
   static const String _bio = 'Kurang inpo aku kang';
 
-  static const String _fotoAsset = 'assets/images/ino bingung';
+  static const String _fotoAsset = 'assets/images/ino bingung.jpg';
 
   @override
   Widget build(BuildContext context) {

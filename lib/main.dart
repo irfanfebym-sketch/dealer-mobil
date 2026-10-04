@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/Views/home_page.dart';
 import 'package:get/get.dart';
 import 'package:flutter_application_1/Views/login_page.dart';
-
+import 'package:flutter_application_1/Controller/auth_controller.dart';
 void main() {
+  Get.put(AuthController(), permanent: true);
   runApp(const MyApp());
 }
 
@@ -18,7 +20,7 @@ class MyApp extends StatelessWidget {
 
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: LoginView(),
+      home: HomePage(),
     );
   }
 }

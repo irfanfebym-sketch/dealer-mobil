@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:flutter_application_1/Controller/simple_ui.dart';
 import 'package:flutter_application_1/style/style_login.dart';
 import 'package:flutter_application_1/Views/home_page.dart';
+import 'package:flutter_application_1/Controller/auth_controller.dart';
 
 class SignUpView extends StatefulWidget {
   const SignUpView({Key? key}) : super(key: key);
@@ -395,7 +396,10 @@ class _SignUpViewState extends State<SignUpView> {
         ),
         onPressed: () {
           if (_formKey.currentState!.validate()) {
-            // TODO: proses registrasi ke backend/Firebase
+            Get.find<AuthController>().registerAccount(
+              namaUser: namaController.text,
+              emailUser: emailController.text,
+            );
             Get.offAll(() => HomePage());
           }
         },

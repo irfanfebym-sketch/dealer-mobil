@@ -12,9 +12,9 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
   get: ^4.6.5
-  google_fonts: ^8.2.1
+  google_fonts: ^9.0.0
   lottie: ^3.4.0
   fl_chart: ^1.2.0
 
