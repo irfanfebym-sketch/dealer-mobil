@@ -3,6 +3,7 @@ import 'package:flutter_application_1/models/basic_model.dart';
 import 'package:get/get.dart';
 import 'package:flutter_application_1/Controller/auth_controller.dart';
 import 'package:flutter_application_1/Views/registrasi_data_diri_page.dart';
+import 'package:flutter_application_1/Views/checkout_page.dart';
 
 class CarDetailPage extends StatelessWidget {
   final Mobil mobil;
@@ -107,9 +108,9 @@ class CarDetailPage extends StatelessWidget {
                       ),
                       onPressed: () {
                         final auth = Get.find<AuthController>();
-                        if(auth.isComplete){
-                          // TODO: proses beli / hubungi dealer
-                        }else{
+                        if (auth.isComplete) {
+                          Get.to(() => CheckoutPage(mobil: mobil));
+                        } else {
                           Get.to(() => const RegistrasiDataDiriPage());
                         }
                       },
