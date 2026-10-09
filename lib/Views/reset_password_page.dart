@@ -125,8 +125,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       },
                     ),
                     const SizedBox(height: 18),
-
-                    /// Confirm New Password (selalu tersembunyi, tanpa toggle)
                     _buildLabel('Re-enter new password*'),
                     const SizedBox(height: 6),
                     TextFormField(

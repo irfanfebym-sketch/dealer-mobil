@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_application_1/Controller/simple_ui.dart';
+import 'package:flutter_application_1/Controller/auth_controller.dart';
 import 'package:flutter_application_1/style/style_login.dart';
 import 'package:flutter_application_1/Views/home_page.dart';
 import 'package:flutter_application_1/Views/signup_page.dart';
@@ -14,20 +15,45 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  TextEditingController namaController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
 
+  bool _loading = false;
+
   static const Color kHondaRed = Color.fromARGB(255, 228, 5, 33);
+  static const Color kAbu = Color.fromARGB(255, 107, 101, 101);
 
   @override
   void dispose() {
-    namaController.dispose();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+    final error = await Get.find<AuthController>().login(
+      emailUser: emailController.text,
+      passwordUser: passwordController.text,
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (error != null) {
+      Get.snackbar(
+        'Login gagal',
+        error,
+        backgroundColor: kHondaRed,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    Get.offAll(() => HomePage());
   }
 
   @override
@@ -44,7 +70,7 @@ class _LoginViewState extends State<LoginView> {
             if (constraints.maxWidth > 600) {
               return _buildLargeScreen(size, simpleUIController);
             } else {
-                return _buildSmallScreen(size, simpleUIController);
+              return _buildSmallScreen(size, simpleUIController);
             }
           },
         ),
@@ -100,9 +126,8 @@ class _LoginViewState extends State<LoginView> {
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: size.width > 600
-          ? MainAxisAlignment.center
-          : MainAxisAlignment.start,
+      mainAxisAlignment:
+          size.width > 600 ? MainAxisAlignment.center : MainAxisAlignment.start,
       children: [
         size.width > 600
             ? Container()
@@ -121,7 +146,7 @@ class _LoginViewState extends State<LoginView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-                  Text(
+              const Text(
                 'LOGIN',
                 style: TextStyle(
                   color: Color.fromARGB(150, 0, 0, 0),
@@ -153,36 +178,18 @@ class _LoginViewState extends State<LoginView> {
             key: _formKey,
             child: Column(
               children: [
-                /// Username or Gmail
+                /// Email
                 TextFormField(
                   style: kTextFormFieldStyle(),
-                  decoration: InputDecoration(
-                    hintStyle:
-                        const TextStyle(color: Color.fromARGB(255, 107, 101, 101)),
-                    prefixIcon:
-                        const Icon(Icons.person, color: Color.fromARGB(255, 0, 0, 0)),
-                    hintText: 'Username or Gmail',
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      borderSide: BorderSide(color: Color.fromARGB(255, 107, 101, 101)),
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      borderSide: BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                    ),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      borderSide: BorderSide(color: Color.fromARGB(255, 107, 101, 101)),
-                    ),
-                  ),
-                  controller: namaController,
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: _dekorasi(hint: 'Email', icon: Icons.email),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter username';
-                    } else if (value.length < 4) {
-                      return 'at least enter 4 characters';
-                    } else if (value.length > 13) {
-                      return 'maximum character is 13';
+                      return 'Please enter your email';
+                    } else if (!RegExp(r'^[\w\.\-]+@([\w\-]+\.)+[\w\-]{2,}$')
+                        .hasMatch(value.trim())) {
+                      return 'Please enter a valid email';
                     }
                     return null;
                   },
@@ -195,42 +202,27 @@ class _LoginViewState extends State<LoginView> {
                     style: kTextFormFieldStyle(),
                     controller: passwordController,
                     obscureText: simpleUIController.isObscure.value,
-                    decoration: InputDecoration(
-                      hintStyle: const TextStyle(color: Color.fromARGB(135, 0, 0, 0)),
-                      prefixIcon: const Icon(Icons.lock_open,
-                          color: Color.fromARGB(255, 0, 0, 0)),
-                      suffixIcon: IconButton(
+                    decoration: _dekorasi(
+                      hint: 'Password',
+                      icon: Icons.lock_open,
+                      focusColor: kAbu,
+                      suffix: IconButton(
                         icon: Icon(
                           simpleUIController.isObscure.value
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: const Color.fromARGB(255, 0, 0, 0),
+                          color: Colors.black,
                         ),
                         onPressed: () {
                           simpleUIController.isObscureActive();
                         },
                       ),
-                      hintText: 'Password',
-                      enabledBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        borderSide: BorderSide(color: Color.fromARGB(255, 107, 101, 101)),
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        borderSide: BorderSide(color: Color.fromARGB(255, 107, 101, 101)),
-                      ),
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        borderSide: BorderSide(color: Color.fromARGB(255, 107, 101, 101)),
-                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
-                      } else if (value.length < 7) {
-                        return 'Password must be at least 7 characters';
-                      } else if (value.length > 13) {
-                        return 'Password must not exceed 13 characters';
+                      } else if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
                       }
                       return null;
                     },
@@ -260,7 +252,6 @@ class _LoginViewState extends State<LoginView> {
 
                 GestureDetector(
                   onTap: () {
-                    namaController.clear();
                     emailController.clear();
                     passwordController.clear();
                     _formKey.currentState?.reset();
@@ -270,8 +261,8 @@ class _LoginViewState extends State<LoginView> {
                   child: RichText(
                     text: TextSpan(
                       text: 'Don\'t have an account?',
-                      style: TextStyle(
-                          color: const Color.fromARGB(255, 0, 0, 0), fontSize: 16),
+                      style: const TextStyle(
+                          color: Color.fromARGB(255, 0, 0, 0), fontSize: 16),
                       children: [
                         TextSpan(
                           text: ' Sign up',
@@ -303,14 +294,42 @@ class _LoginViewState extends State<LoginView> {
             ),
           ),
         ),
-        onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            Get.offAll(() => HomePage());
-          }
-        },
-        child: const Text('Login',
-            style: TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontSize: 18)),
+        onPressed: _loading ? null : _submit,
+        child: _loading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : const Text(
+                'Login',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
       ),
+    );
+  }
+
+  InputDecoration _dekorasi({
+    required String hint,
+    required IconData icon,
+    Widget? suffix,
+    Color focusColor = Colors.black,
+  }) {
+    OutlineInputBorder border(Color c) => OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(15)),
+          borderSide: BorderSide(color: c),
+        );
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: kAbu),
+      prefixIcon: Icon(icon, color: Colors.black),
+      suffixIcon: suffix,
+      enabledBorder: border(kAbu),
+      focusedBorder: border(focusColor),
+      border: border(kAbu),
     );
   }
 }

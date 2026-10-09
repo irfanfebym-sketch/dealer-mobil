@@ -20,7 +20,10 @@ class _SignUpViewState extends State<SignUpView> {
 
   final _formKey = GlobalKey<FormState>();
 
+  bool _loading = false;
+
   static const Color kHondaRed = Color.fromARGB(255, 228, 5, 33);
+  static const Color kAbu = Color.fromARGB(255, 107, 101, 101);
 
   @override
   void dispose() {
@@ -29,6 +32,37 @@ class _SignUpViewState extends State<SignUpView> {
     passwordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+    final error = await Get.find<AuthController>().registerAccount(
+      namaUser: namaController.text,
+      emailUser: emailController.text,
+      passwordUser: passwordController.text,
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (error != null) {
+      Get.snackbar(
+        'Pendaftaran gagal',
+        error,
+        backgroundColor: kHondaRed,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    Get.offAll(() => HomePage());
+    Get.snackbar(
+      'Berhasil',
+      'Akun kamu sudah dibuat. Selamat datang!',
+      backgroundColor: kHondaRed,
+      colorText: Colors.white,
+    );
   }
 
   @override
@@ -58,11 +92,11 @@ class _SignUpViewState extends State<SignUpView> {
     Size size,
     SimpleUIController simpleUIController,
   ) {
-    return Center( // <- kunci: pusatkan SELURUH blok (gambar+form) di halaman
+    return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: SizedBox(
-          height: size.height * 0.85, // tinggi tetap & wajar, foto tidak di-crop berlebihan
+          height: size.height * 0.85,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -163,31 +197,11 @@ class _SignUpViewState extends State<SignUpView> {
             key: _formKey,
             child: Column(
               children: [
-                /// Nama Lengkap
+                /// Nama / Username
                 TextFormField(
                   style: kTextFormFieldStyle(),
-                  decoration: InputDecoration(
-                    hintStyle: const TextStyle(
-                        color: Color.fromARGB(255, 107, 101, 101)),
-                    prefixIcon: const Icon(Icons.person,
-                        color: Color.fromARGB(255, 0, 0, 0)),
-                    hintText: 'Username',
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      borderSide: BorderSide(
-                          color: Color.fromARGB(255, 107, 101, 101)),
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      borderSide: BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                    ),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      borderSide: BorderSide(
-                          color: Color.fromARGB(255, 107, 101, 101)),
-                    ),
-                  ),
                   controller: namaController,
+                  decoration: _dekorasi(hint: 'Username', icon: Icons.person),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter username';
@@ -204,34 +218,14 @@ class _SignUpViewState extends State<SignUpView> {
                 /// Email
                 TextFormField(
                   style: kTextFormFieldStyle(),
-                  decoration: InputDecoration(
-                    hintStyle: const TextStyle(
-                        color: Color.fromARGB(255, 107, 101, 101)),
-                    prefixIcon: const Icon(Icons.email,
-                        color: Color.fromARGB(255, 0, 0, 0)),
-                    hintText: 'Email',
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      borderSide: BorderSide(
-                          color: Color.fromARGB(255, 107, 101, 101)),
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      borderSide: BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                    ),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      borderSide: BorderSide(
-                          color: Color.fromARGB(255, 107, 101, 101)),
-                    ),
-                  ),
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
+                  decoration: _dekorasi(hint: 'Email', icon: Icons.email),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
-                    } else if (!RegExp(r'^[\w\.\-]+@([\w\-]+\.)+[\w\-]{2,4}$')
-                        .hasMatch(value)) {
+                    } else if (!RegExp(r'^[\w\.\-]+@([\w\-]+\.)+[\w\-]{2,}$')
+                        .hasMatch(value.trim())) {
                       return 'Please enter a valid email';
                     }
                     return null;
@@ -245,46 +239,17 @@ class _SignUpViewState extends State<SignUpView> {
                     style: kTextFormFieldStyle(),
                     controller: passwordController,
                     obscureText: simpleUIController.isObscure.value,
-                    decoration: InputDecoration(
-                      hintStyle:
-                          const TextStyle(color: Color.fromARGB(135, 0, 0, 0)),
-                      prefixIcon: const Icon(Icons.lock_open,
-                          color: Color.fromARGB(255, 0, 0, 0)),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          simpleUIController.isObscure.value
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: const Color.fromARGB(255, 0, 0, 0),
-                        ),
-                        onPressed: () {
-                          simpleUIController.isObscureActive();
-                        },
-                      ),
-                      hintText: 'Password',
-                      enabledBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        borderSide: BorderSide(
-                            color: Color.fromARGB(255, 107, 101, 101)),
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        borderSide: BorderSide(
-                            color: Color.fromARGB(255, 107, 101, 101)),
-                      ),
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        borderSide: BorderSide(
-                            color: Color.fromARGB(255, 107, 101, 101)),
-                      ),
+                    decoration: _dekorasi(
+                      hint: 'Password',
+                      icon: Icons.lock_open,
+                      focusColor: kAbu,
+                      suffix: _tombolMata(simpleUIController),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
-                      } else if (value.length < 7) {
-                        return 'Password must be at least 7 characters';
-                      } else if (value.length > 13) {
-                        return 'Password must not exceed 13 characters';
+                      } else if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
                       }
                       return null;
                     },
@@ -298,38 +263,11 @@ class _SignUpViewState extends State<SignUpView> {
                     style: kTextFormFieldStyle(),
                     controller: confirmPasswordController,
                     obscureText: simpleUIController.isObscure.value,
-                    decoration: InputDecoration(
-                      hintStyle:
-                          const TextStyle(color: Color.fromARGB(135, 0, 0, 0)),
-                      prefixIcon: const Icon(Icons.lock_outline,
-                          color: Color.fromARGB(255, 0, 0, 0)),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          simpleUIController.isObscure.value
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: const Color.fromARGB(255, 0, 0, 0),
-                        ),
-                        onPressed: () {
-                          simpleUIController.isObscureActive();
-                        },
-                      ),
-                      hintText: 'Confirm Password',
-                      enabledBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        borderSide: BorderSide(
-                            color: Color.fromARGB(255, 107, 101, 101)),
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        borderSide: BorderSide(
-                            color: Color.fromARGB(255, 107, 101, 101)),
-                      ),
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        borderSide: BorderSide(
-                            color: Color.fromARGB(255, 107, 101, 101)),
-                      ),
+                    decoration: _dekorasi(
+                      hint: 'Confirm Password',
+                      icon: Icons.lock_outline,
+                      focusColor: kAbu,
+                      suffix: _tombolMata(simpleUIController),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -359,9 +297,8 @@ class _SignUpViewState extends State<SignUpView> {
                   child: RichText(
                     text: TextSpan(
                       text: 'Already have an account?',
-                      style: TextStyle(
-                          color: const Color.fromARGB(255, 0, 0, 0),
-                          fontSize: 16),
+                      style: const TextStyle(
+                          color: Color.fromARGB(255, 0, 0, 0), fontSize: 16),
                       children: [
                         TextSpan(
                           text: ' Login',
@@ -394,19 +331,56 @@ class _SignUpViewState extends State<SignUpView> {
             ),
           ),
         ),
-        onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            Get.find<AuthController>().registerAccount(
-              namaUser: namaController.text,
-              emailUser: emailController.text,
-            );
-            Get.offAll(() => HomePage());
-          }
-        },
-        child: const Text('Sign Up',
-            style:
-                TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontSize: 18)),
+        onPressed: _loading ? null : _submit,
+        child: _loading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : const Text(
+                'Sign Up',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
       ),
+    );
+  }
+
+  Widget _tombolMata(SimpleUIController simpleUIController) {
+    return IconButton(
+      icon: Icon(
+        simpleUIController.isObscure.value
+            ? Icons.visibility
+            : Icons.visibility_off,
+        color: Colors.black,
+      ),
+      onPressed: () {
+        simpleUIController.isObscureActive();
+      },
+    );
+  }
+
+  InputDecoration _dekorasi({
+    required String hint,
+    required IconData icon,
+    Widget? suffix,
+    Color focusColor = Colors.black,
+  }) {
+    OutlineInputBorder border(Color c) => OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(15)),
+          borderSide: BorderSide(color: c),
+        );
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: kAbu),
+      prefixIcon: Icon(icon, color: Colors.black),
+      suffixIcon: suffix,
+      enabledBorder: border(kAbu),
+      focusedBorder: border(focusColor),
+      border: border(kAbu),
     );
   }
 }
