@@ -20,6 +20,41 @@ class _RegistrasiDataDiriPageState extends State<RegistrasiDataDiriPage> {
 
   static const Color kHondaRed = Color.fromARGB(255, 228, 5, 33);
 
+  bool _loading = false;
+
+  Future<void> _simpan() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+    final error = await Get.find<AuthController>().completeProfile(
+      nikUser: nikController.text,
+      noKKUser: noKKController.text,
+      noHpUser: noHpController.text,
+      alamatUser: alamatController.text,
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (error != null) {
+      Get.snackbar(
+        'Gagal menyimpan',
+        error,
+        backgroundColor: kHondaRed,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    Get.back();
+    Get.snackbar(
+      'Berhasil',
+      'Data diri kamu sudah lengkap. Sekarang kamu bisa '
+          'melanjutkan pembelian.',
+      backgroundColor: kHondaRed,
+      colorText: Colors.white,
+    );
+  }
+
   @override
   void dispose() {
     nikController.dispose();
@@ -173,28 +208,20 @@ class _RegistrasiDataDiriPageState extends State<RegistrasiDataDiriPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        Get.find<AuthController>().completeProfile(
-                          nikUser: nikController.text,
-                          noKKUser: noKKController.text,
-                          noHpUser: noHpController.text,
-                          alamatUser: alamatController.text,
-                        );
-                        Get.back();
-                        Get.snackbar(
-                          'Berhasil',
-                          'Data diri kamu sudah lengkap. Sekarang kamu bisa '
-                              'melanjutkan pembelian.',
-                          backgroundColor: kHondaRed,
-                          colorText: Colors.white,
-                        );
-                      }
-                    },
-                    child: const Text(
-                      'Simpan Data Diri',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
+                    onPressed: _loading ? null : _simpan,
+                    child: _loading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Simpan Data Diri',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                   ),
                 ),
               ],

@@ -170,6 +170,41 @@ class _CarHomePageState extends State<HomePage> {
           Text('Honda', style: AppText.logoMark()),
           const SizedBox(width: 4),
           Text('Dealer', style: AppText.logoMark(color: Colors.white70)),
+          const Spacer(),
+          Obx(() {
+            final auth = Get.find<AuthController>();
+            if (auth.isGuest) {
+              return IconButton(
+                tooltip: 'Masuk',
+                icon: const Icon(Icons.login, color: Colors.white),
+                onPressed: () => Get.to(() => const LoginView()),
+              );
+            }
+            return PopupMenuButton<String>(
+              tooltip: 'Akun',
+              icon: const Icon(Icons.account_circle,
+                  color: Colors.white, size: 28),
+              onSelected: (value) async {
+                if (value == 'logout') {
+                  await auth.logout();
+                  Get.snackbar('Keluar', 'Kamu sudah keluar dari akun.');
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  enabled: false,
+                  child: Text(
+                    auth.nama.value.isEmpty ? auth.email.value : auth.nama.value,
+                    style: AppText.body(),
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Text('Keluar'),
+                ),
+              ],
+            );
+          }),
         ],
       ),
     );
@@ -449,6 +484,12 @@ class _CarHomePageState extends State<HomePage> {
                               final auth = Get.find<AuthController>();
                               if (auth.isComplete) {
                                 Get.to(() => CheckoutPage(mobil: mobil));
+                              } else if (auth.isGuest) {
+                                Get.snackbar(
+                                  'Login dulu',
+                                  'Silakan masuk atau daftar akun sebelum membeli.',
+                                );
+                                Get.to(() => const LoginView());
                               } else {
                                 Get.to(() => const RegistrasiDataDiriPage());
                               }
