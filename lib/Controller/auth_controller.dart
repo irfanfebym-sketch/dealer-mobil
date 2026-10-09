@@ -30,16 +30,25 @@ class AuthController extends GetxController {
 
   bool get isAdmin => role.value == 'admin';
 
+  // ---------------------------------------------------------------------------
+  // Pulihkan sesi saat aplikasi dibuka / browser di-refresh
+  // ---------------------------------------------------------------------------
   Future<void> restoreSession() async {
     try {
+      // Event pertama dari authStateChanges adalah status login yang
+      // dipulihkan Firebase dari penyimpanan browser (null = belum login).
       final user = await _auth.authStateChanges().first;
       if (user != null) {
         await _loadProfile(user);
       }
     } catch (_) {
+      // Kalau gagal, aplikasi tetap jalan sebagai guest.
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Daftar akun baru. Mengembalikan null kalau sukses, atau teks pesan error.
+  // ---------------------------------------------------------------------------
   Future<String?> registerAccount({
     required String namaUser,
     required String emailUser,
@@ -72,7 +81,9 @@ class AuthController extends GetxController {
     }
   }
 
-
+  // ---------------------------------------------------------------------------
+  // Login. Mengembalikan null kalau sukses, atau teks pesan error.
+  // ---------------------------------------------------------------------------
   Future<String?> login({
     required String emailUser,
     required String passwordUser,
@@ -91,6 +102,9 @@ class AuthController extends GetxController {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Lengkapi data diri -> naik ke level 'complete'.
+  // ---------------------------------------------------------------------------
   Future<String?> completeProfile({
     required String nikUser,
     required String noKKUser,
@@ -129,6 +143,9 @@ class AuthController extends GetxController {
     _resetState();
   }
 
+  // ---------------------------------------------------------------------------
+  // Helper internal
+  // ---------------------------------------------------------------------------
   Future<void> _loadProfile(User user) async {
     final doc = await _db.collection('users').doc(user.uid).get();
     final data = doc.data();
