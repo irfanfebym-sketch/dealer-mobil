@@ -30,25 +30,18 @@ class AuthController extends GetxController {
 
   bool get isAdmin => role.value == 'admin';
 
-  // ---------------------------------------------------------------------------
   // Pulihkan sesi saat aplikasi dibuka / browser di-refresh
-  // ---------------------------------------------------------------------------
   Future<void> restoreSession() async {
     try {
-      // Event pertama dari authStateChanges adalah status login yang
-      // dipulihkan Firebase dari penyimpanan browser (null = belum login).
       final user = await _auth.authStateChanges().first;
       if (user != null) {
         await _loadProfile(user);
       }
     } catch (_) {
-      // Kalau gagal, aplikasi tetap jalan sebagai guest.
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Daftar akun baru. Mengembalikan null kalau sukses, atau teks pesan error.
-  // ---------------------------------------------------------------------------
   Future<String?> registerAccount({
     required String namaUser,
     required String emailUser,
@@ -81,9 +74,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Login. Mengembalikan null kalau sukses, atau teks pesan error.
-  // ---------------------------------------------------------------------------
   Future<String?> login({
     required String emailUser,
     required String passwordUser,
@@ -102,9 +93,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Lengkapi data diri -> naik ke level 'complete'.
-  // ---------------------------------------------------------------------------
   Future<String?> completeProfile({
     required String nikUser,
     required String noKKUser,
@@ -137,15 +126,26 @@ class AuthController extends GetxController {
       return 'Terjadi kesalahan: $e';
     }
   }
+    // Kirim link reset password ke email. null = sukses, selain itu pesan error.
+  Future<String?> sendPasswordReset(String emailUser) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: emailUser.trim());
+      return null;
+    } on FirebaseAuthException catch (e) {
+      // Jangan bocorkan apakah email terdaftar atau tidak.
+      if (e.code == 'user-not-found') return null;
+      return _pesanError(e);
+    } catch (e) {
+      return 'Terjadi kesalahan: $e';
+    }
+  }
 
   Future<void> logout() async {
     await _auth.signOut();
     _resetState();
   }
 
-  // ---------------------------------------------------------------------------
   // Helper internal
-  // ---------------------------------------------------------------------------
   Future<void> _loadProfile(User user) async {
     final doc = await _db.collection('users').doc(user.uid).get();
     final data = doc.data();

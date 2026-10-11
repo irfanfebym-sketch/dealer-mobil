@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:flutter_application_1/Controller/simple_ui.dart';
-import 'package:flutter_application_1/style/style_login.dart';
-import 'package:flutter_application_1/Views/home_page.dart';
 import 'package:flutter_application_1/Controller/auth_controller.dart';
+import 'package:flutter_application_1/style/style_auth_stage.dart';
+import 'package:flutter_application_1/style/style_signup_stage.dart';
+import 'package:flutter_application_1/Views/home_page.dart';
 
 class SignUpView extends StatefulWidget {
   const SignUpView({Key? key}) : super(key: key);
@@ -13,374 +13,180 @@ class SignUpView extends StatefulWidget {
 }
 
 class _SignUpViewState extends State<SignUpView> {
-  TextEditingController namaController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
-  TextEditingController confirmPasswordController = TextEditingController();
+  final _stage = SignUpStageController();
 
-  final _formKey = GlobalKey<FormState>();
+  final _nama = TextEditingController();
+  final _email = TextEditingController();
+  final _pass = TextEditingController();
+  final _confirm = TextEditingController();
+  // Tombol mata tidak boleh mengambil fokus dari kolom password.
+  final _toggleF1 = FocusNode(canRequestFocus: false, skipTraversal: true);
+  final _toggleF2 = FocusNode(canRequestFocus: false, skipTraversal: true);
 
-  bool _loading = false;
-
-  static const Color kHondaRed = Color.fromARGB(255, 228, 5, 33);
-  static const Color kAbu = Color.fromARGB(255, 107, 101, 101);
+  bool _show = false, _busy = false, _isError = false;
+  String _msg = '';
 
   @override
   void dispose() {
-    namaController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
+    _stage.dispose();
+    _nama.dispose();
+    _email.dispose();
+    _pass.dispose();
+    _confirm.dispose();
+    _toggleF1.dispose();
+    _toggleF2.dispose();
     super.dispose();
   }
 
+  // Setiap kolom yang terisi benar membuat mobil maju satu langkah.
+  void _onChanged() {
+    if (_msg.isNotEmpty) setState(() => _msg = '');
+    var n = 0;
+    final nama = _nama.text.trim();
+    if (nama.length >= 4 && nama.length <= 13) n++;
+    if (kEmailRegex.hasMatch(_email.text.trim())) n++;
+    if (_pass.text.length >= 6) n++;
+    if (_confirm.text.isNotEmpty && _confirm.text == _pass.text) n++;
+    _stage.setFilled(n);
+  }
+
+  void _showError(String pesan) {
+    setState(() {
+      _isError = true;
+      _msg = pesan;
+    });
+    _stage.error();
+  }
+
+  /// Mengembalikan teks error pertama, atau null kalau semua isian valid.
+  String? _validasi() {
+    final nama = _nama.text.trim();
+    if (nama.length < 4 || nama.length > 13) {
+      return 'Username harus 4 sampai 13 karakter.';
+    }
+    if (!kEmailRegex.hasMatch(_email.text.trim())) {
+      return 'Format email belum benar. Contoh: nama@contoh.com';
+    }
+    if (_pass.text.length < 6) return 'Password minimal 6 karakter.';
+    if (_pass.text != _confirm.text) return 'Konfirmasi password tidak sama.';
+    return null;
+  }
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_busy) return;
 
-    setState(() => _loading = true);
-    final error = await Get.find<AuthController>().registerAccount(
-      namaUser: namaController.text,
-      emailUser: emailController.text,
-      passwordUser: passwordController.text,
-    );
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    if (error != null) {
-      Get.snackbar(
-        'Pendaftaran gagal',
-        error,
-        backgroundColor: kHondaRed,
-        colorText: Colors.white,
-      );
+    final salah = _validasi();
+    if (salah != null) {
+      _showError(salah);
       return;
     }
 
+    setState(() {
+      _busy = true;
+      _msg = '';
+    });
+
+    final error = await Get.find<AuthController>().registerAccount(
+      namaUser: _nama.text,
+      emailUser: _email.text,
+      passwordUser: _pass.text,
+    );
+    if (!mounted) return;
+
+    if (error != null) {
+      setState(() => _busy = false);
+      _showError(error);
+      return;
+    }
+
+    setState(() {
+      _isError = false;
+      _msg = 'Akun dibuat. Mobilmu masuk garasi…';
+    });
+    _stage.win();
+
+    // Beri waktu mobil masuk garasi dan pintu menutup (sekitar 2 detik).
+    await Future.delayed(const Duration(milliseconds: 2600));
+    if (!mounted) return;
     Get.offAll(() => HomePage());
     Get.snackbar(
       'Berhasil',
       'Akun kamu sudah dibuat. Selamat datang!',
-      backgroundColor: kHondaRed,
+      backgroundColor: kShirt,
       colorText: Colors.white,
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    var size = MediaQuery.of(context).size;
-    SimpleUIController simpleUIController = Get.put(SimpleUIController());
-    return GestureDetector(
-      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-      child: Scaffold(
-        backgroundColor: const Color.fromARGB(255, 248, 246, 246),
-        resizeToAvoidBottomInset: false,
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 600) {
-              return _buildLargeScreen(size, simpleUIController);
-            } else {
-              return _buildSmallScreen(size, simpleUIController);
-            }
-          },
-        ),
-      ),
-    );
-  }
-
-  // Large Screen
-  Widget _buildLargeScreen(
-    Size size,
-    SimpleUIController simpleUIController,
-  ) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: SizedBox(
-          height: size.height * 0.85,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 4,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.asset(
-                    'assets/images/honda_image.jpg',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              SizedBox(width: size.width * 0.08),
-              Expanded(
-                flex: 5,
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: _buildMainBody(size, simpleUIController),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Small Screen
-  Widget _buildSmallScreen(
-    Size size,
-    SimpleUIController simpleUIController,
-  ) {
-    return SingleChildScrollView(
-      child: Center(
-        child: _buildMainBody(size, simpleUIController),
-      ),
-    );
-  }
-
-  /// Main Body
-  Widget _buildMainBody(
-    Size size,
-    SimpleUIController simpleUIController,
-  ) {
+  Widget _panel(bool wide) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
       children: [
-        size.width > 600
-            ? Container()
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  'assets/images/honda_image.jpg',
-                  height: size.height * 0.2,
-                  width: size.width,
-                  fit: BoxFit.cover,
-                ),
-              ),
-        SizedBox(height: size.height * 0.03),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'SIGN UP',
-                style: TextStyle(
-                  color: Color.fromARGB(150, 0, 0, 0),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Keluarga Honda',
-                style: kmyLoginTextStyle(size),
-              ),
-            ],
+        const AuthHeading(
+          title: 'Buat akun baru',
+          subtitle: 'Daftar untuk membuka detail unit Honda.',
+        ),
+        TextField(
+          controller: _nama,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.username],
+          onChanged: (_) => _onChanged(),
+          decoration: authDecoration('Username', '4 sampai 13 karakter'),
+        ),
+        const SizedBox(height: 14),
+        TextField(
+          controller: _email,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.email],
+          onChanged: (_) => _onChanged(),
+          decoration: authDecoration('Email', 'nama@contoh.com'),
+        ),
+        const SizedBox(height: 14),
+        TextField(
+          controller: _pass,
+          obscureText: !_show,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.newPassword],
+          onChanged: (_) => _onChanged(),
+          decoration: authDecoration(
+            'Password',
+            'Minimal 6 karakter',
+            suffix: authToggle(_toggleF1, _show, () => setState(() => _show = !_show)),
           ),
         ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Text(
-            'Buat Akun Baru untuk Bergabung dengan Dealer Honda Terpercaya',
-            style: kmyTitleTextStyle(size),
+        const SizedBox(height: 14),
+        TextField(
+          controller: _confirm,
+          obscureText: !_show,
+          autofillHints: const [AutofillHints.newPassword],
+          onChanged: (_) => _onChanged(),
+          onSubmitted: (_) => _submit(),
+          decoration: authDecoration(
+            'Konfirmasi password',
+            'Ulangi password',
+            suffix: authToggle(_toggleF2, _show, () => setState(() => _show = !_show)),
           ),
         ),
-        SizedBox(height: size.height * 0.03),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                /// Nama / Username
-                TextFormField(
-                  style: kTextFormFieldStyle(),
-                  controller: namaController,
-                  decoration: _dekorasi(hint: 'Username', icon: Icons.person),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter username';
-                    } else if (value.length < 4) {
-                      return 'at least enter 4 characters';
-                    } else if (value.length > 13) {
-                      return 'maximum character is 13';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: size.height * 0.02),
-
-                /// Email
-                TextFormField(
-                  style: kTextFormFieldStyle(),
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: _dekorasi(hint: 'Email', icon: Icons.email),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    } else if (!RegExp(r'^[\w\.\-]+@([\w\-]+\.)+[\w\-]{2,}$')
-                        .hasMatch(value.trim())) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: size.height * 0.02),
-
-                /// Password
-                Obx(
-                  () => TextFormField(
-                    style: kTextFormFieldStyle(),
-                    controller: passwordController,
-                    obscureText: simpleUIController.isObscure.value,
-                    decoration: _dekorasi(
-                      hint: 'Password',
-                      icon: Icons.lock_open,
-                      focusColor: kAbu,
-                      suffix: _tombolMata(simpleUIController),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      } else if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(height: size.height * 0.02),
-
-                /// Confirm Password
-                Obx(
-                  () => TextFormField(
-                    style: kTextFormFieldStyle(),
-                    controller: confirmPasswordController,
-                    obscureText: simpleUIController.isObscure.value,
-                    decoration: _dekorasi(
-                      hint: 'Confirm Password',
-                      icon: Icons.lock_outline,
-                      focusColor: kAbu,
-                      suffix: _tombolMata(simpleUIController),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
-                      } else if (value != passwordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(height: size.height * 0.03),
-
-                signUpButton(),
-                SizedBox(height: size.height * 0.03),
-
-                GestureDetector(
-                  onTap: () {
-                    namaController.clear();
-                    emailController.clear();
-                    passwordController.clear();
-                    confirmPasswordController.clear();
-                    _formKey.currentState?.reset();
-                    simpleUIController.isObscure.value = true;
-                    Get.back();
-                  },
-                  child: RichText(
-                    text: TextSpan(
-                      text: 'Already have an account?',
-                      style: const TextStyle(
-                          color: Color.fromARGB(255, 0, 0, 0), fontSize: 16),
-                      children: [
-                        TextSpan(
-                          text: ' Login',
-                          style: kLoginOrSignUpTextStyle(size),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: size.height * 0.02),
-              ],
-            ),
-          ),
+        const SizedBox(height: 6),
+        AuthMessage(msg: _msg, isError: _isError),
+        const SizedBox(height: 6),
+        AuthButton(label: 'Daftar', busy: _busy, onPressed: _submit),
+        const SizedBox(height: 14),
+        AuthLink(
+          text: 'Sudah punya akun?',
+          action: 'Masuk',
+          onTap: () => Get.back(),
         ),
       ],
     );
   }
 
-  // Sign Up Button
-  Widget signUpButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: ElevatedButton(
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.all(kHondaRed),
-          shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-          ),
-        ),
-        onPressed: _loading ? null : _submit,
-        child: _loading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.white,
-                ),
-              )
-            : const Text(
-                'Sign Up',
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-      ),
-    );
-  }
-
-  Widget _tombolMata(SimpleUIController simpleUIController) {
-    return IconButton(
-      icon: Icon(
-        simpleUIController.isObscure.value
-            ? Icons.visibility
-            : Icons.visibility_off,
-        color: Colors.black,
-      ),
-      onPressed: () {
-        simpleUIController.isObscureActive();
-      },
-    );
-  }
-
-  InputDecoration _dekorasi({
-    required String hint,
-    required IconData icon,
-    Widget? suffix,
-    Color focusColor = Colors.black,
-  }) {
-    OutlineInputBorder border(Color c) => OutlineInputBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(15)),
-          borderSide: BorderSide(color: c),
-        );
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: kAbu),
-      prefixIcon: Icon(icon, color: Colors.black),
-      suffixIcon: suffix,
-      enabledBorder: border(kAbu),
-      focusedBorder: border(focusColor),
-      border: border(kAbu),
+  @override
+  Widget build(BuildContext context) {
+    return AuthLayout(
+      stage: SignUpStage(controller: _stage),
+      panelBuilder: _panel,
+      wideHeight: 680,
     );
   }
 }
