@@ -241,97 +241,166 @@ class _CarHomePageState extends State<HomePage> {
   Widget _buildBanner() {
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: AspectRatio(
-          aspectRatio: 2.1,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              PageView.builder(
-                controller: _bannerController,
-                itemCount: banners.length,
-                onPageChanged: (i) => setState(() => _currentBanner = i),
-                itemBuilder: (context, index) {
-                  return Image.network(
-                    banners[index]['image']!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.ink,
-                      child: const Center(
-                        child: Icon(Icons.broken_image,
-                            size: 48, color: Colors.white38),
-                      ),
-                    ),
-                  );
-                },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Layar sempit (HP): teks ditaruh di bawah gambar, bukan di atasnya.
+          final compact = constraints.maxWidth < 600;
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: compact ? _buildBannerCompact() : _buildBannerWide(),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Layar lebar (laptop): teks menimpa gambar, seperti sebelumnya.
+  Widget _buildBannerWide() {
+    return AspectRatio(
+      aspectRatio: 2.1,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _bannerImages(),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Color(0xCC15171C),
+                  Colors.transparent,
+                ],
+                stops: [0.0, 0.7],
               ),
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Color(0xCC15171C),
-                      Colors.transparent,
-                    ],
-                    stops: [0.0, 0.7],
+            ),
+          ),
+          _bannerAccent(100),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 28,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(width: 36, height: 4, color: AppColors.hondaRed),
+                const SizedBox(height: 10),
+                Text(
+                  banners[_currentBanner]['headline']!,
+                  style: AppText.display(),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  banners[_currentBanner]['subtitle']!,
+                  style: AppText.subtitle(color: Colors.white70),
+                ),
+                const SizedBox(height: 16),
+                _bannerDots(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Layar sempit (HP): gambar di atas, panel teks gelap di bawahnya.
+  Widget _buildBannerCompact() {
+    return Container(
+      color: AppColors.ink,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _bannerImages(),
+                _bannerAccent(64),
+              ],
+            ),
+          ),
+          ConstrainedBox(
+            // minHeight menjaga tinggi panel tetap saat slide berganti.
+            constraints: const BoxConstraints(minHeight: 165),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(width: 36, height: 4, color: AppColors.hondaRed),
+                  const SizedBox(height: 10),
+                  Text(
+                    banners[_currentBanner]['headline']!,
+                    style: AppText.display().copyWith(fontSize: 24),
                   ),
-                ),
-              ),
-              // Aksen merah diagonal di pojok kanan atas, isyarat "sporty"
-              Positioned(
-                top: -20,
-                right: -20,
-                child: Transform.rotate(
-                  angle: 0.785,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    color: AppColors.hondaRed.withOpacity(0.85),
+                  const SizedBox(height: 6),
+                  Text(
+                    banners[_currentBanner]['subtitle']!,
+                    style: AppText.subtitle(color: Colors.white70)
+                        .copyWith(fontSize: 13),
                   ),
-                ),
+                  const SizedBox(height: 14),
+                  _bannerDots(),
+                ],
               ),
-              Positioned(
-                left: 24,
-                right: 24,
-                bottom: 28,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(width: 36, height: 4, color: AppColors.hondaRed),
-                    const SizedBox(height: 10),
-                    Text(
-                      banners[_currentBanner]['headline']!,
-                      style: AppText.display(),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      banners[_currentBanner]['subtitle']!,
-                      style: AppText.subtitle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: List.generate(
-                        banners.length,
-                        (i) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          margin: const EdgeInsets.only(right: 6),
-                          width: _currentBanner == i ? 20 : 6,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            color: _currentBanner == i
-                                ? AppColors.hondaRed
-                                : Colors.white38,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bannerImages() {
+    return PageView.builder(
+      controller: _bannerController,
+      itemCount: banners.length,
+      onPageChanged: (i) => setState(() => _currentBanner = i),
+      itemBuilder: (context, index) {
+        return Image.network(
+          banners[index]['image']!,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: AppColors.ink,
+            child: const Center(
+              child: Icon(Icons.broken_image, size: 48, color: Colors.white38),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Aksen merah diagonal di pojok kanan atas, isyarat "sporty".
+  Widget _bannerAccent(double size) {
+    return Positioned(
+      top: -size * 0.2,
+      right: -size * 0.2,
+      child: Transform.rotate(
+        angle: 0.785,
+        child: Container(
+          width: size,
+          height: size,
+          color: AppColors.hondaRed.withOpacity(0.85),
+        ),
+      ),
+    );
+  }
+
+  Widget _bannerDots() {
+    return Row(
+      children: List.generate(
+        banners.length,
+        (i) => AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          margin: const EdgeInsets.only(right: 6),
+          width: _currentBanner == i ? 20 : 6,
+          height: 4,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2),
+            color: _currentBanner == i ? AppColors.hondaRed : Colors.white38,
           ),
         ),
       ),
